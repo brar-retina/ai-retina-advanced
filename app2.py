@@ -122,7 +122,7 @@ with st.sidebar:
         st.success("API Key configured!")
         st.info(f"Using model: {next(name for name, model in AVAILABLE_MODELS.items() if model == st.session_state.selected_model)}")
         
-        base_url = st.query_params.get('base_url', "https://ai-retina3advanced.streamlit.app")
+        base_url = st.query_params.get('base_url', "ai-retina3advanced.streamlit.app")
         shareable_link = f"{base_url}?api_key={quote(st.session_state.api_key)}&model={st.session_state.selected_model}"
         st.markdown("### Shareable Link")
         st.code(shareable_link, language="text")
