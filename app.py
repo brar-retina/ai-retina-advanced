@@ -50,7 +50,7 @@ def initialize_model(api_key):
         raise Exception(f"Model initialization failed: {str(e)}")
 
 # Get query parameters
-query_params = st.query_params
+query_params = st.experimental_get_query_params()
 if 'api_key' in query_params and not st.session_state.api_key_configured:
     api_key = unquote(query_params['api_key'][0])
     try:
