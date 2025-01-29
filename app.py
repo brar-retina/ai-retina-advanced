@@ -49,10 +49,9 @@ def initialize_model(api_key):
     except Exception as e:
         raise Exception(f"Model initialization failed: {str(e)}")
 
-# Get query parameters
-query_params = st.experimental_get_query_params()
-if 'api_key' in query_params and not st.session_state.api_key_configured:
-    api_key = unquote(query_params['api_key'][0])
+# Get query parameters using the new st.query_params
+if 'api_key' in st.query_params and not st.session_state.api_key_configured:
+    api_key = unquote(st.query_params['api_key'])
     try:
         model, chat_session = initialize_model(api_key)
         st.session_state.model = model
@@ -89,9 +88,8 @@ with st.sidebar:
     else:
         st.success("API Key configured!")
         
-        base_url = st.experimental_get_query_params().get('base_url', [None])[0]
-        if base_url is None:
-            base_url = st.secrets.get("STREAMLIT_BASE_URL", "YOUR_DEPLOYED_URL")
+        # Get base URL from query parameters
+        base_url = st.query_params.get('base_url', "YOUR_DEPLOYED_URL")
         
         shareable_link = f"{base_url}?api_key={quote(st.session_state.api_key)}"
         st.markdown("### Shareable Link")
