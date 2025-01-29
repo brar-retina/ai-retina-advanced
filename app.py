@@ -29,7 +29,7 @@ def initialize_model(api_key):
         }
 
         model = genai.GenerativeModel(
-            model_name="gemini-2.0-flash-exp",
+            model_name="gemini-1.5-flash",
             generation_config=generation_config,
             system_instruction="""Act as a retina specialist, by looking at provided OCT and/or fundus photographs - 
             identify landmarks/biomarkers and then tell the initial diagnosis, the differentials, 
