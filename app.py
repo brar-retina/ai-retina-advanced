@@ -14,6 +14,8 @@ if 'api_key_configured' not in st.session_state:
     st.session_state.api_key_configured = False
 if 'chat_session' not in st.session_state:
     st.session_state.chat_session = None
+if 'search_results' not in st.session_state:
+    st.session_state.search_results = []
 
 def initialize_model(api_key):
     """Initialize the Gemini model with specific configurations"""
@@ -29,7 +31,7 @@ def initialize_model(api_key):
         }
 
         model = genai.GenerativeModel(
-            model_name="gemini-1.5-flash",
+            model_name="gemini-2.0-flash-exp",
             generation_config=generation_config,
             system_instruction="""Act as a retina specialist, by looking at provided OCT and/or fundus photographs - 
             identify landmarks/biomarkers and then tell the initial diagnosis, the differentials, 
@@ -42,16 +44,31 @@ def initialize_model(api_key):
             ],
         )
         
-        # Initialize chat session
+        # Initialize chat session with empty history
         chat_session = model.start_chat(history=[])
         
         return model, chat_session
     except Exception as e:
         raise Exception(f"Model initialization failed: {str(e)}")
 
-# Get query parameters using the new st.query_params
-if 'api_key' in st.query_params and not st.session_state.api_key_configured:
-    api_key = unquote(st.query_params['api_key'])
+def process_search_results(response):
+    """Extract and format search results from the response"""
+    search_results = []
+    if hasattr(response, 'candidates') and response.candidates:
+        for candidate in response.candidates:
+            if hasattr(candidate, 'search_results') and candidate.search_results:
+                for result in candidate.search_results:
+                    search_results.append({
+                        'title': result.title,
+                        'url': result.url,
+                        'snippet': result.snippet
+                    })
+    return search_results
+
+# Get query parameters
+query_params = st.experimental_get_query_params()
+if 'api_key' in query_params and not st.session_state.api_key_configured:
+    api_key = unquote(query_params['api_key'][0])
     try:
         model, chat_session = initialize_model(api_key)
         st.session_state.model = model
@@ -88,8 +105,9 @@ with st.sidebar:
     else:
         st.success("API Key configured!")
         
-        # Get base URL from query parameters
-        base_url = st.query_params.get('base_url', "YOUR_DEPLOYED_URL")
+        base_url = st.experimental_get_query_params().get('base_url', [None])[0]
+        if base_url is None:
+            base_url = st.secrets.get("STREAMLIT_BASE_URL", "YOUR_DEPLOYED_URL")
         
         shareable_link = f"{base_url}?api_key={quote(st.session_state.api_key)}"
         st.markdown("### Shareable Link")
@@ -150,10 +168,22 @@ if submit_button:
                     [message] + image_parts
                 )
                 
+                # Process search results
+                search_results = process_search_results(response)
+                st.session_state.search_results = search_results
+                
                 # Display results
                 st.success("Analysis complete!")
                 st.markdown("### Analysis Results")
                 st.write(response.text)
+                
+                # Display search results if available
+                if search_results:
+                    st.markdown("### Related Research & References")
+                    for result in search_results:
+                        with st.expander(result['title']):
+                            st.write(result['snippet'])
+                            st.markdown(f"[Read more]({result['url']})")
                 
                 # Display uploaded images
                 st.markdown("### Uploaded Images")
