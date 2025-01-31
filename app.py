@@ -27,19 +27,21 @@ def initialize_model(api_key):
             "top_p": 0.95,
             "top_k": 40,
             "max_output_tokens": 8192,
-        }
-
-        safety_settings = {
-            "HARASSMENT": "block_none",
-            "HATE_SPEECH": "block_none",
-            "SEXUALLY_EXPLICIT": "block_none",
-            "DANGEROUS_CONTENT": "block_none",
+            "response_mime_type": "text/plain",
         }
 
         model = genai.GenerativeModel(
-            model_name="gemini-pro-vision",
+            model_name="gemini-2.0-flash-exp",
             generation_config=generation_config,
-            safety_settings=safety_settings
+            system_instruction="""Act as a retina specialist, by looking at provided OCT and/or fundus photographs - 
+            identify landmarks/biomarkers and then tell the initial diagnosis, the differentials, 
+            the pertinent investigations and the management strategy. Keep it formal and brief. 
+            Provide a level of certainty at the end.""",
+            tools=[
+                genai.protos.Tool(
+                    google_search=genai.protos.Tool.GoogleSearch(),
+                ),
+            ],
         )
         
         # Initialize chat session with empty history
@@ -63,10 +65,9 @@ def process_search_results(response):
                     })
     return search_results
 
-# Get query parameters
-query_params = st.experimental_get_query_params()
-if 'api_key' in query_params and not st.session_state.api_key_configured:
-    api_key = unquote(query_params['api_key'][0])
+# Get query parameters (updated from experimental)
+if 'api_key' in st.query_params and not st.session_state.api_key_configured:
+    api_key = unquote(st.query_params['api_key'])
     try:
         model, chat_session = initialize_model(api_key)
         st.session_state.model = model
@@ -103,7 +104,8 @@ with st.sidebar:
     else:
         st.success("API Key configured!")
         
-        base_url = st.experimental_get_query_params().get('base_url', [None])[0]
+        # Updated from experimental
+        base_url = st.query_params.get('base_url', None)
         if base_url is None:
             base_url = st.secrets.get("STREAMLIT_BASE_URL", "YOUR_DEPLOYED_URL")
         
@@ -142,27 +144,54 @@ if submit_button:
     else:
         try:
             with st.spinner("Analyzing images..."):
-                # Prepare prompt
-                prompt = "Please analyze these retinal images."
+                # Prepare message
+                message = "Please analyze these retinal images."
                 if case_notes:
-                    prompt += f"\n\nClinical Notes: {case_notes}"
-                
+                    message += f"\n\nClinical Notes: {case_notes}"
+
                 # Prepare images
-                images = []
+                image_parts = []
                 for uploaded_file in uploaded_files:
                     image = Image.open(uploaded_file)
                     if image.mode != 'RGB':
                         image = image.convert('RGB')
-                    images.append(image)
+                    # Convert image to bytes
+                    byte_stream = io.BytesIO()
+                    image.save(byte_stream, format='JPEG')
+                    image_bytes = byte_stream.getvalue()
+                    image_parts.append(
+                        {
+                            "inline_data": {
+                                "mime_type": "image/jpeg",
+                                "data": image_bytes
+                            }
+                        }
+                    )
 
-                # Generate response
-                response = st.session_state.model.generate_content([prompt, *images])
-                response.resolve()
+                # Get response using chat session
+                response = st.session_state.chat_session.send_message(
+                    content=[
+                        {"text": message},
+                        *image_parts
+                    ]
+                )
+                
+                # Process search results
+                search_results = process_search_results(response)
+                st.session_state.search_results = search_results
                 
                 # Display results
                 st.success("Analysis complete!")
                 st.markdown("### Analysis Results")
                 st.write(response.text)
+                
+                # Display search results if available
+                if search_results:
+                    st.markdown("### Related Research & References")
+                    for result in search_results:
+                        with st.expander(result['title']):
+                            st.write(result['snippet'])
+                            st.markdown(f"[Read more]({result['url']})")
                 
                 # Display uploaded images
                 st.markdown("### Uploaded Images")
