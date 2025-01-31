@@ -35,7 +35,7 @@ def initialize_model(api_key):
             generation_config=generation_config,
             system_instruction="""Act as a retina specialist, by looking at provided OCT and/or fundus photographs - 
             identify landmarks/biomarkers and then tell the initial diagnosis, the differentials, 
-            the pertinent investigations and the management strategy. Keep it formal and brief. 
+            the pertinent investigations and the management strategy. Keep it formal and brief. Use Google Search if needed 
             Provide a level of certainty at the end.""",
             tools=[
                 genai.protos.Tool(
@@ -44,26 +44,9 @@ def initialize_model(api_key):
             ],
         )
         
-        # Initialize chat session with empty history
-        chat_session = model.start_chat(history=[])
-        
         return model, chat_session
     except Exception as e:
         raise Exception(f"Model initialization failed: {str(e)}")
-
-def process_search_results(response):
-    """Extract and format search results from the response"""
-    search_results = []
-    if hasattr(response, 'candidates') and response.candidates:
-        for candidate in response.candidates:
-            if hasattr(candidate, 'search_results') and candidate.search_results:
-                for result in candidate.search_results:
-                    search_results.append({
-                        'title': result.title,
-                        'url': result.url,
-                        'snippet': result.snippet
-                    })
-    return search_results
 
 # Get query parameters (updated from experimental)
 if 'api_key' in st.query_params and not st.session_state.api_key_configured:
