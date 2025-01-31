@@ -48,6 +48,31 @@ def initialize_model(api_key):
     except Exception as e:
         raise Exception(f"Model initialization failed: {str(e)}")
 
+def process_image(uploaded_file):
+    """Process uploaded image file into format required by Gemini"""
+    image = Image.open(uploaded_file)
+    
+    # Convert to RGB if needed
+    if image.mode != 'RGB':
+        image = image.convert('RGB')
+    
+    # Resize image if too large
+    max_size = 1600
+    if max(image.size) > max_size:
+        ratio = max_size / max(image.size)
+        new_size = tuple(int(dim * ratio) for dim in image.size)
+        image = image.resize(new_size, Image.Resampling.LANCZOS)
+    
+    # Convert to bytes
+    buffer = io.BytesIO()
+    image.save(buffer, format="JPEG")
+    image_bytes = buffer.getvalue()
+    
+    return {
+        "mime_type": "image/jpeg",
+        "data": image_bytes
+    }
+
 # Get query parameters (updated from experimental)
 if 'api_key' in st.query_params and not st.session_state.api_key_configured:
     api_key = unquote(st.query_params['api_key'])
