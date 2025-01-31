@@ -127,54 +127,25 @@ if submit_button:
     else:
         try:
             with st.spinner("Analyzing images..."):
-                # Prepare message
-                message = "Please analyze these retinal images."
-                if case_notes:
-                    message += f"\n\nClinical Notes: {case_notes}"
-
-                # Prepare images
-                image_parts = []
-                for uploaded_file in uploaded_files:
-                    image = Image.open(uploaded_file)
-                    if image.mode != 'RGB':
-                        image = image.convert('RGB')
-                    # Convert image to bytes
-                    byte_stream = io.BytesIO()
-                    image.save(byte_stream, format='JPEG')
-                    image_bytes = byte_stream.getvalue()
-                    image_parts.append(
-                        {
-                            "inline_data": {
-                                "mime_type": "image/jpeg",
-                                "data": image_bytes
-                            }
-                        }
-                    )
-
-                # Get response using chat session
-                response = st.session_state.chat_session.send_message(
-                    content=[
-                        {"text": message},
-                        *image_parts
-                    ]
-                )
+                # Process images
+                processed_images = [process_image(file) for file in uploaded_files]
                 
-                # Process search results
-                search_results = process_search_results(response)
-                st.session_state.search_results = search_results
+                # Prepare message
+                prompt = "Please analyze these retinal images."
+                if case_notes:
+                    prompt += f"\n\nClinical Notes: {case_notes}"
+                
+                # Create message parts
+                message_parts = [prompt]
+                message_parts.extend(processed_images)
+                
+                # Send message and get response
+                response = st.session_state.chat_session.send_message(message_parts)
                 
                 # Display results
                 st.success("Analysis complete!")
                 st.markdown("### Analysis Results")
                 st.write(response.text)
-                
-                # Display search results if available
-                if search_results:
-                    st.markdown("### Related Research & References")
-                    for result in search_results:
-                        with st.expander(result['title']):
-                            st.write(result['snippet'])
-                            st.markdown(f"[Read more]({result['url']})")
                 
                 # Display uploaded images
                 st.markdown("### Uploaded Images")
@@ -185,6 +156,7 @@ if submit_button:
 
         except Exception as e:
             st.error(f"An error occurred: {str(e)}")
+            st.error("Full error details:", exc_info=True)
 
 # Usage instructions
 with st.sidebar:
