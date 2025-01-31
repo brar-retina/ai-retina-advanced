@@ -169,10 +169,9 @@ if submit_button:
                     )
 
                 # Get response using chat session
-                response = st.session_state.chat_session.send_message(
-                    content=[
-                        {"text": message},
-                        *image_parts
+                response = st.session_state.chat_session.send_message([
+                    {"role": "user", "content": message},
+                    {"role": "user", "content": image_parts}
                     ]
                 )
                 
