@@ -15,7 +15,7 @@ if 'chat_session' not in st.session_state:
 
 AVAILABLE_MODELS = {
     "Gemini 1.5 Flash": "gemini-1.5-flash",
-    "Gemini 2.0 Flash (NEW)": "gemini-2.0-flash"
+    "Gemini 2.0 Flash (NEW)": "gemini-2.0-flash-exp"
 }
 
 def initialize_model(api_key, model_name):
