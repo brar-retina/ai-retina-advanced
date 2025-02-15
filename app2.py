@@ -15,7 +15,7 @@ if 'chat_session' not in st.session_state:
 
 AVAILABLE_MODELS = {
     "Gemini 1.5 Flash": "gemini-1.5-flash",
-    "Gemini 2.0 Flash (Experimental)": "gemini-2.0-flash-exp"
+    "Gemini 2.0 Flash (NEW)": "gemini-2.0-flash"
 }
 
 def initialize_model(api_key, model_name):
@@ -130,14 +130,14 @@ with st.sidebar:
 
 # Main app
 st.title("🔬 Retinal Image Analyzer")
-st.write("Upload retinal images (OCT/fundus) for AI-powered analysis. ©brar-retina{Anand Singh Brar}")
+st.markdown("Upload retinal images (OCT/fundus) for AI-powered analysis. ©Anand Singh Brar  [**@brar_retina**](https://www.instagram.com/brar_retina)")
 
 # Main form
 with st.form("analysis_form"):
     case_notes = st.text_area(
-        "Clinical Notes (optional)",
+        "Case Scenario",
         height=100,
-        placeholder="Enter any relevant clinical information..."
+        placeholder="Enter any relevant clinical information... *bonus* use this box to ask follow up questions after the preliminary analysis report."
     )
     
     uploaded_files = st.file_uploader(
@@ -146,7 +146,7 @@ with st.form("analysis_form"):
         type=['png', 'jpg', 'jpeg']
     )
     
-    submit_button = st.form_submit_button("Analyze Images")
+    submit_button = st.form_submit_button("Analyze Images/Generate Response")
 
 if submit_button:
     if not st.session_state.api_key_configured:
