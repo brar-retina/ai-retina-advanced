@@ -77,7 +77,7 @@ def show_model_config():
         # Model type selection
         model_type = st.radio(
             "Select Model Type",
-            ["gemini-2.0-flash-exp", "DeepSeek", "Custom"],
+            ["Gemini", "DeepSeek", "Custom"],
             key="model_type"
         )
         
