@@ -14,7 +14,7 @@ if 'api_key_configured' not in st.session_state:
 if 'chat_session' not in st.session_state:
     st.session_state.chat_session = None
 if 'model_type' not in st.session_state:
-    st.session_state.model_type = "gemini"
+    st.session_state.model_type = "gemini-2.0-flash-exp"
 if 'generation_config' not in st.session_state:
     st.session_state.generation_config = {
         "temperature": 1.0,
@@ -34,10 +34,10 @@ AVAILABLE_MODELS = {
     "Custom": {}
 }
 
-def initialize_model(api_key, model_name, model_type="gemini"):
+def initialize_model(api_key, model_name, model_type="gemini-2.0-flash-exp"):
     """Initialize the selected model with specific configurations"""
     try:
-        if model_type == "gemini":
+        if model_type == "gemini-2.0-flash-exp":
             genai.configure(api_key=api_key)
             
             model = genai.GenerativeModel(
@@ -77,7 +77,7 @@ def show_model_config():
         # Model type selection
         model_type = st.radio(
             "Select Model Type",
-            ["Gemini", "DeepSeek", "Custom"],
+            ["gemini-2.0-flash-exp", "DeepSeek", "Custom"],
             key="model_type"
         )
         
@@ -148,7 +148,7 @@ with st.sidebar:
     if not st.session_state.api_key_configured:
         model_type, selected_model_name = show_model_config()
         
-        if model_type == "gemini":
+        if model_type == "gemini-2.0-flash-exp":
             api_key = st.text_input("Enter your Google API Key", type="password")
         elif model_type == "deepseek":
             api_key = st.text_input("Enter your DeepSeek API Key", type="password")
