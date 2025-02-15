@@ -4,7 +4,6 @@ import google.generativeai as genai
 from PIL import Image
 import io
 import requests  # Add this for DeepSeek API calls
-import base64
 
 # Configure page
 st.set_page_config(page_title="Retinal Image Analyzer", layout="wide")
@@ -27,12 +26,7 @@ if 'generation_config' not in st.session_state:
 AVAILABLE_MODELS = {
     "Gemini": {
         "Gemini 1.5 Flash": "gemini-1.5-flash",
-        "Gemini 2.0 Flash (Experimental)": "gemini-2.0-flash-exp",
-        "Gemini 2.0 Flash Thinking (Exp)": "gemini-2.0-flash-thinking-exp-01-21",
-        "LearnLM 1.5 Pro": "learnlm-1.5-pro-experimental",
-    },
-    "Llama-DeepSeek Pipeline": {
-        "Llama 3.2 11B Vision + DeepSeek": "llama-deepseek-pipeline"
+        "Gemini 2.0 Flash (NEW)": "gemini-2.0-flash-exp"
     },
     "DeepSeek": {
         "DeepSeek-Vision": "deepseek-vision-r1"
@@ -83,7 +77,7 @@ def show_model_config():
         # Model type selection
         model_type = st.radio(
             "Select Model Type",
-            ["Gemini", "Llama-DeepSeek", "DeepSeek", "Custom"],
+            ["Gemini", "DeepSeek", "Custom"],
             key="model_type"
         )
         
