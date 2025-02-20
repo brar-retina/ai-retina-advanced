@@ -89,7 +89,7 @@ with st.sidebar:
         temperature = st.slider(
             "Temperature",
             min_value=0.0,
-            max_value=1.0,
+            max_value=2.0,
             value=st.session_state.generation_config["temperature"],
             step=0.1
         )
@@ -229,7 +229,7 @@ with st.sidebar:
     3. Upload retinal images (OCT/fundus)
     4. Add any relevant clinical notes
     5. Click 'Analyze Images'
-    6. Write follow-up queries and ask to 'Generate Response'
+    6. Write follow-up queries and click 'Generate Response'
     """)
     
     st.markdown("### Privacy Notice")
