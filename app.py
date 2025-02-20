@@ -1,11 +1,12 @@
 import streamlit as st
 from urllib.parse import quote, unquote
 import google.generativeai as genai
+from google.ai.generativelanguage_v1beta.types import content
 from PIL import Image
 import io
 
 # Configure page
-st.set_page_config(page_title="Retinal Image Analyzer", layout="wide")
+st.set_page_config(page_title="Retinal Image Analyzer v2.0", layout="wide")
 
 # Initialize session state
 if 'api_key_configured' not in st.session_state:
@@ -21,9 +22,9 @@ if 'generation_config' not in st.session_state:
     }
 
 AVAILABLE_MODELS = {
-    "Gemini 1.5 Flash": "gemini-1.5-flash",
-    "Gemini 2.0 Flash (Experimental)": "gemini-2.0-flash-exp",
+    "Gemini 2.0 Flash": "gemini-2.0-flash-exp",
     "Gemini 2.0 Flash Thinking (Exp)": "gemini-2.0-flash-thinking-exp-01-21",
+    "Gemini 2.0 Pro": "gemini-2.0-pro-exp-02-05",
     "LearnLM 1.5 Pro (Exp)": "learnlm-1.5-pro-experimental"
 }
 
@@ -161,7 +162,7 @@ with st.sidebar:
         st.markdown("⚠️ **Note**: This link contains your API key. Share securely!")
 
 # Main app
-st.title("🔬 Retinal Image Analyzer")
+st.title("🔬 Retinal Image Analyzer v2.0")
 st.markdown("Upload retinal images (OCT/fundus) for AI-powered analysis. ©Anand Singh Brar  [**@brar_retina**](https://www.instagram.com/brar_retina)")
 
 # Main form
@@ -169,7 +170,7 @@ with st.form("analysis_form"):
     case_notes = st.text_area(
         "Case Scenario",
         height=100,
-        placeholder="Enter any relevant clinical information... *bonus* use this box to ask follow up questions after the preliminary analysis report."
+        placeholder="Enter any relevant clinical information... *bonus* use this box to ask follow-up questions after the preliminary analysis report."
     )
     
     uploaded_files = st.file_uploader(
@@ -228,6 +229,7 @@ with st.sidebar:
     3. Upload retinal images (OCT/fundus)
     4. Add any relevant clinical notes
     5. Click 'Analyze Images'
+    6. Write follow-up queries and ask to 'Generate Response'
     """)
     
     st.markdown("### Privacy Notice")
