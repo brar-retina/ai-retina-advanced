@@ -13,6 +13,8 @@ if 'api_key_configured' not in st.session_state:
     st.session_state.api_key_configured = False
 if 'chat_session' not in st.session_state:
     st.session_state.chat_session = None
+if 'chat_messages' not in st.session_state:
+    st.session_state.chat_messages = []
 if 'generation_config' not in st.session_state:
     st.session_state.generation_config = {
         "temperature": 1.0,
@@ -20,6 +22,8 @@ if 'generation_config' not in st.session_state:
         "top_k": 40,
         "max_output_tokens": 8192,
     }
+if 'analysis_complete' not in st.session_state:
+    st.session_state.analysis_complete = False
 
 AVAILABLE_MODELS = {
     "Gemini 2.0 Flash": "gemini-2.0-flash-exp",
@@ -28,14 +32,17 @@ AVAILABLE_MODELS = {
     "LearnLM 1.5 Pro (Exp)": "learnlm-1.5-pro-experimental"
 }
 
-def initialize_model(api_key, model_name):
+def initialize_model(api_key, model_name, generation_config=None):
     """Initialize the Gemini model with specific configurations"""
     try:
         genai.configure(api_key=api_key)
         
+        # Use provided generation config or default from session state
+        config = generation_config if generation_config else st.session_state.generation_config
+        
         model = genai.GenerativeModel(
             model_name=model_name,
-            generation_config=st.session_state.generation_config
+            generation_config=config
         )
         
         # Initialize chat session
@@ -53,6 +60,29 @@ def initialize_model(api_key, model_name):
         return model, chat_session
     except Exception as e:
         raise Exception(f"Model initialization failed: {str(e)}")
+
+def update_model_parameters():
+    """Update model parameters without reinitializing the entire session"""
+    if st.session_state.api_key_configured:
+        try:
+            # Create a new model with updated parameters
+            model = genai.GenerativeModel(
+                model_name=st.session_state.selected_model,
+                generation_config=st.session_state.generation_config
+            )
+            
+            # Keep chat history but update the model
+            history = st.session_state.chat_session.history
+            chat_session = model.start_chat(history=history)
+            
+            st.session_state.model = model
+            st.session_state.chat_session = chat_session
+            
+            return True
+        except Exception as e:
+            st.sidebar.error(f"Failed to update parameters: {str(e)}")
+            return False
+    return False
 
 def process_image(uploaded_file):
     """Process uploaded image file into format required by Gemini"""
@@ -78,6 +108,26 @@ def process_image(uploaded_file):
         "mime_type": "image/jpeg",
         "data": image_bytes
     }
+
+def send_chat_message():
+    if st.session_state.user_input and st.session_state.api_key_configured:
+        user_message = st.session_state.user_input
+        
+        # Add user message to chat history
+        st.session_state.chat_messages.append({"role": "user", "content": user_message})
+        
+        # Clear input box
+        st.session_state.user_input = ""
+        
+        with st.spinner("Generating response..."):
+            try:
+                # Send message to the model
+                response = st.session_state.chat_session.send_message(user_message)
+                
+                # Add assistant response to chat history
+                st.session_state.chat_messages.append({"role": "assistant", "content": response.text})
+            except Exception as e:
+                st.error(f"Error generating response: {str(e)}")
 
 # Sidebar configuration
 with st.sidebar:
@@ -151,11 +201,59 @@ with st.sidebar:
         st.success("API Key configured!")
         st.info(f"Using model: {next(name for name, model in AVAILABLE_MODELS.items() if model == st.session_state.selected_model)}")
         
-        # Show current configuration
-        st.markdown("### Current Configuration")
-        st.json(st.session_state.generation_config)
+        # Dynamic parameters section (always visible after configuration)
+        st.markdown("### Model Parameters")
+        st.caption("Adjust parameters on-the-fly")
         
-        base_url = st.query_params.get('base_url', "ai-retina3advanced.streamlit.app")
+        temperature = st.slider(
+            "Temperature",
+            min_value=0.0,
+            max_value=2.0,
+            value=st.session_state.generation_config["temperature"],
+            step=0.1,
+            key="dyn_temperature"
+        )
+        
+        top_p = st.slider(
+            "Top P",
+            min_value=0.0,
+            max_value=1.0,
+            value=st.session_state.generation_config["top_p"],
+            step=0.05,
+            key="dyn_top_p"
+        )
+        
+        top_k = st.slider(
+            "Top K",
+            min_value=1,
+            max_value=100,
+            value=st.session_state.generation_config["top_k"],
+            key="dyn_top_k"
+        )
+        
+        max_tokens = st.slider(
+            "Max Output Tokens",
+            min_value=1000,
+            max_value=16000,
+            value=st.session_state.generation_config["max_output_tokens"],
+            step=1000,
+            key="dyn_max_tokens"
+        )
+        
+        # Update button for dynamic parameters
+        if st.button("Update Parameters"):
+            # Update generation config
+            st.session_state.generation_config = {
+                "temperature": temperature,
+                "top_p": top_p,
+                "top_k": top_k,
+                "max_output_tokens": max_tokens,
+            }
+            
+            if update_model_parameters():
+                st.success("Parameters updated successfully!")
+        
+        base_url = st.query_params.get('base_url', "ai-retina2advanced.streamlit.app")
         shareable_link = f"{base_url}?api_key={quote(st.session_state.api_key)}&model={st.session_state.selected_model}"
         st.markdown("### Shareable Link")
         st.code(shareable_link, language="text")
@@ -170,7 +268,7 @@ with st.form("analysis_form"):
     case_notes = st.text_area(
         "Case Scenario",
         height=100,
-        placeholder="Enter any relevant clinical information... *bonus* use this box to ask follow-up questions after the preliminary analysis report."
+        placeholder="Enter any relevant clinical information..."
     )
     
     uploaded_files = st.file_uploader(
@@ -179,7 +277,7 @@ with st.form("analysis_form"):
         type=['png', 'jpg', 'jpeg']
     )
     
-    submit_button = st.form_submit_button("Analyze Images/Generate Response")
+    submit_button = st.form_submit_button("Analyze Images")
 
 if submit_button:
     if not st.session_state.api_key_configured:
@@ -204,21 +302,48 @@ if submit_button:
                 # Send message and get response
                 response = st.session_state.chat_session.send_message(message_parts)
                 
+                # Add to chat history
+                st.session_state.chat_messages = [
+                    {"role": "user", "content": "Please analyze these uploaded images."},
+                    {"role": "assistant", "content": response.text}
+                ]
+                
+                st.session_state.analysis_complete = True
+                
                 # Display results
                 st.success("Analysis complete!")
-                st.markdown("### Analysis Results")
-                st.write(response.text)
                 
-                # Display uploaded images
-                st.markdown("### Uploaded Images")
-                cols = st.columns(len(uploaded_files))
-                for idx, uploaded_file in enumerate(uploaded_files):
-                    with cols[idx]:
-                        st.image(uploaded_file, caption=f"Image {idx + 1}")
-
         except Exception as e:
             st.error(f"An error occurred: {str(e)}")
             st.error("Full error details:", exc_info=True)
+
+# Display analysis results and chat interface
+if st.session_state.analysis_complete:
+    # Display uploaded images
+    st.markdown("### Uploaded Images")
+    image_cols = st.columns(min(len(uploaded_files), 4) if 'uploaded_files' in locals() and uploaded_files else 1)
+    if 'uploaded_files' in locals() and uploaded_files:
+        for idx, uploaded_file in enumerate(uploaded_files):
+            with image_cols[idx % len(image_cols)]:
+                st.image(uploaded_file, caption=f"Image {idx + 1}")
+    
+    # Display chat messages
+    st.markdown("### Analysis & Follow-up")
+    
+    chat_container = st.container()
+    with chat_container:
+        for message in st.session_state.chat_messages:
+            if message["role"] == "user":
+                st.markdown(f"**You**: {message['content']}")
+            else:
+                st.markdown(f"**AI Specialist**: {message['content']}")
+    
+    # Chat input
+    st.text_input(
+        "Ask follow-up questions or request clarification",
+        key="user_input",
+        on_change=send_chat_message
+    )
 
 # Usage instructions
 with st.sidebar:
@@ -229,7 +354,8 @@ with st.sidebar:
     3. Upload retinal images (OCT/fundus)
     4. Add any relevant clinical notes
     5. Click 'Analyze Images'
-    6. Write follow-up queries and click 'Generate Response'
+    6. Ask follow-up questions in the chat box
+    7. Adjust model parameters as needed
     """)
     
     st.markdown("### Privacy Notice")
