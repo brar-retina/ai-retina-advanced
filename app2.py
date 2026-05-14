@@ -14,8 +14,10 @@ if 'chat_session' not in st.session_state:
     st.session_state.chat_session = None
 
 AVAILABLE_MODELS = {
-    "Gemini 1.5 Flash": "gemini-1.5-flash",
-    "Gemini 2.0 Flash (NEW)": "gemini-2.0-flash-exp"
+    "Gemini 3.1 Flash-Lite (Recommended)": "gemini-3.1-flash-lite",
+    "Gemini 3.1 Flash": "gemini-3.1-flash",
+    "Gemini 3.1 Pro": "gemini-3.1-pro",
+    "Gemini 2.0 Flash": "gemini-2.0-flash"
 }
 
 def initialize_model(api_key, model_name):
@@ -79,7 +81,7 @@ def process_image(uploaded_file):
 # Get query parameters
 if 'api_key' in st.query_params and not st.session_state.api_key_configured:
     api_key = unquote(st.query_params['api_key'])
-    selected_model = st.query_params.get('model', "gemini-1.5-flash")
+    selected_model = st.query_params.get('model', "gemini-3.1-flash-lite")
     try:
         model, chat_session = initialize_model(api_key, selected_model)
         st.session_state.model = model
@@ -191,11 +193,22 @@ if submit_button:
 with st.sidebar:
     st.markdown("### How to use")
     st.markdown("""
-    1. Enter your Google API key (or use shared link)
-    2. Select Gemini model version
-    3. Upload retinal images (OCT/fundus)
-    4. Add any relevant clinical notes
-    5. Click 'Analyze Images'
+    1. Get free API key from [Google AI Studio](https://ai.google.com/studio)
+    2. Enter your API key above
+    3. Select Gemini model version
+    4. Upload retinal images (OCT/fundus)
+    5. Add any relevant clinical notes
+    6. Click 'Analyze Images'
+    """)
+    
+    st.markdown("### Model Info")
+    st.markdown("""
+    **Latest Models (May 2026):**
+    - **Gemini 3.1 Flash-Lite**: Fast & efficient (recommended for this app)
+    - **Gemini 3.1 Flash**: Balanced performance
+    - **Gemini 3.1 Pro**: Most capable
+    
+    All available **free** on Google AI Studio!
     """)
     
     st.markdown("### Privacy Notice")
